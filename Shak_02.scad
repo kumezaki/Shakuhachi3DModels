@@ -87,7 +87,23 @@ module shak_all()
     }
 }
 
-module outer_ring(r_offset, remove)
+module outer_ring(r_offset)
+{
+    cyl_h = inner_cyl_h;
+    difference()
+    {
+        // render solid
+        cylinder(r = tube_r, h = cyl_h, center = false);
+        
+        // remove inner portion
+        translate([0,0,0])
+        {
+            cylinder(r = tube_r-inner_cyl_w+r_offset, h = cyl_h, center = false);
+        }
+    }
+}
+
+module outer_ring_deprecated(r_offset, remove)
 {
     cyl_h = inner_cyl_h + (remove ? extra : 0.);
     difference()
@@ -147,7 +163,8 @@ module shak_top()
             }
     
             // add outer ring of inner cylinder
-            translate([0,0,bottom_h]) { outer_ring(0.0, false); }
+//            translate([0,0,bottom_h]) { outer_ring(0.0, false); }
+            translate([0,0,bottom_h]) { outer_ring(0.0); }
         }
     }
 }
@@ -161,12 +178,35 @@ module shak_bottom()
         
         // take away top MINUS inner cylinder height
         translate([0,0,bottom_h+inner_cyl_h]) {
-            cylinder(r = tube_r+extra+uta_x(), h = top_h-inner_cyl_h+extra, center = false);
+            cylinder(r = tube_r+extra+uta_x(), h = top_h-inner_cyl_h+extra+1.0, center = false); // 1.0 added to height as a temporary fix
         }
         
         // take away outer ring of inner cylinder
-        translate([0,0,bottom_h]) { outer_ring(-0.2, true); }
+//        translate([0,0,bottom_h]) { outer_ring(-0.2, true); }
+        translate([0,0,bottom_h]) { outer_ring(-(print_microns/1000*1.5)); }
     }
+}
+
+module nakatsugi_top()
+{
+    difference()
+    {
+        shak_top();
+
+        translate([0,0,inner_cyl_h+5])
+                cylinder(r = tube_r+uta_x(), h = top_h-5, center = false);
+    }
+}
+
+module nakatsugi_bottom()
+{
+    translate([0,0,-(bottom_h-5)])
+        difference()
+        {
+            shak_bottom();
+    
+            cylinder(r = tube_r+uta_x(), h = bottom_h-5, center = false);
+        }
 }
 
 // the following section is for the bent bottom
@@ -215,7 +255,10 @@ module shak_bottom_bend(num_segs)
 
 //shak_all();
 //shak_top();
-shak_bottom();
+//shak_bottom();
+
+nakatsugi_top();
+//nakatsugi_bottom();
 
 // for final print (make sure to switch $fn to 256)
 // num_segs = 15;
